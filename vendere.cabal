@@ -1,0 +1,60 @@
+Cabal-Version:      2.4
+Name:               vendere
+Version:            0.1.0.0
+Build-Type:         Simple
+
+Author:              Alain Magazin, Abdelkrim Did
+Maintainer:          alain.magazin@outlook.com, <abdelkrim mail>
+Copyright:           © 2021 Alain Magazin, Abdelkrim Did.
+License:             Apache-2.0
+License-files:       LICENSE
+
+common base
+  build-depends: base >= 4.14 && < 4.15
+
+common project-config
+  default-language:     Haskell2010
+
+  default-extensions:   NoImplicitPrelude
+                        OverloadedStrings
+
+  ghc-options:          -Wall
+                        -Wcompat
+                        -Wincomplete-record-updates
+                        -Wincomplete-uni-patterns
+                        -Wpartial-fields
+                        -Wredundant-constraints
+                        -Wunused-packages
+
+library
+  exposed-modules:     SellBuy.Market
+  build-depends:       aeson
+                     , base ^>=4.14.1.0
+                     , base16-bytestring 
+                     , binary
+                     , containers
+                     , bytestring
+                     , data-default
+                     , dlist                     
+                     , freer-extras
+                     , lens
+                     , nonempty-containers
+                     , playground-common
+                     , plutus-contract
+                     , plutus-chain-index
+                     , plutus-ledger
+                     , plutus-ledger-api
+                     , plutus-tx-plugin
+                     , plutus-tx
+                     , plutus-use-cases
+                     , prettyprinter
+                     , random
+                     , req ^>= 3.9.0
+                     , tagged
+                     , text
+                     , time
+                     , serialise
+                     , cardano-api
+  hs-source-dirs:      src
+  default-language:    Haskell2010
+  ghc-options:         -Wall -fobject-code -fno-ignore-interface-pragmas -fno-omit-interface-pragmas -fno-strictness -fno-spec-constr -fno-specialise
