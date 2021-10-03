@@ -2,4 +2,4 @@ cradle:
   cabal:
 
     - path: "./src"
-      component: "lib:sell-buy"
+      component: "lib:vendere"

@@ -27,7 +27,11 @@ common project-config
                         -Wunused-packages
 
 library
-  exposed-modules:     SellBuy.Market
+  exposed-modules:     Market.Types
+                     , Market.Onchain
+                     , Market.Offchain
+                     , Market.Trace
+                     , Utility
   build-depends:       aeson
                      , base ^>=4.14.1.0
                      , base16-bytestring 
