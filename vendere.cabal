@@ -34,7 +34,7 @@ library
                      , Utility
   build-depends:       aeson
                      , base ^>=4.14.1.0
-                     , base16-bytestring 
+                     , base16-bytestring
                      , binary
                      , containers
                      , bytestring
@@ -50,15 +50,25 @@ library
                      , plutus-ledger-api
                      , plutus-tx-plugin
                      , plutus-tx
-                     , plutus-use-cases
                      , prettyprinter
-                     , random
-                     , req ^>= 3.9.0
                      , tagged
                      , text
-                     , time
                      , serialise
                      , cardano-api
   hs-source-dirs:      src
   default-language:    Haskell2010
   ghc-options:         -Wall -fobject-code -fno-ignore-interface-pragmas -fno-omit-interface-pragmas -fno-strictness -fno-spec-constr -fno-specialise
+
+
+executable market-plutus
+  import:               base, project-config
+  hs-source-dirs:       app
+  main-is:              market-plutus.hs
+  ghc-options:          -threaded -rtsopts "-with-rtsopts=-T"
+
+  build-depends:        cardano-api
+                      , vendere
+                      , bech32
+                      , plutus-ledger
+                      , plutus-tx
+

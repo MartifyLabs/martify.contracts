@@ -6,8 +6,18 @@
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE DerivingStrategies         #-}
 
-module Market.Onchain where
+module Market.Onchain
+    ( apiBuyScript
+    , typedBuyValidator
+    , Sale
+    , buyValidator
+    ) where
 
+import qualified Data.ByteString.Lazy     as LB
+import qualified Data.ByteString.Short    as SBS
+import           Codec.Serialise          ( serialise )
+
+import           Cardano.Api.Shelley      (PlutusScript (..), PlutusScriptV1)
 import qualified PlutusTx
 import PlutusTx.Prelude as Plutus
     ( Bool(..), Eq((==)), (.), (&&), traceIfFalse, Integer )
@@ -20,8 +30,10 @@ import Ledger
       ScriptContext(scriptContextTxInfo),
       TxInfo(txInfoOutputs),
       Validator,
-      TxOut(txOutValue, txOutAddress), )
+      TxOut(txOutValue, txOutAddress),
+      unValidatorScript )
 import qualified Ledger.Typed.Scripts      as Scripts
+import qualified Plutus.V1.Ledger.Scripts as Plutus
 import           Ledger.Value              as Value ( singleton, geq )
 import qualified Plutus.V1.Ledger.Ada as Ada (lovelaceValueOf)
 
@@ -87,3 +99,12 @@ typedBuyValidator chn = Scripts.mkTypedValidator @Sale
 
 buyValidator :: NFTSale -> Validator
 buyValidator = Scripts.validatorScript . typedBuyValidator
+
+buyScript :: NFTSale -> Plutus.Script
+buyScript = Ledger.unValidatorScript . buyValidator
+
+buyScriptAsShortBs :: NFTSale -> SBS.ShortByteString
+buyScriptAsShortBs = SBS.toShort . LB.toStrict . serialise . buyScript
+
+apiBuyScript :: NFTSale -> PlutusScript PlutusScriptV1
+apiBuyScript = PlutusScriptSerialised . buyScriptAsShortBs

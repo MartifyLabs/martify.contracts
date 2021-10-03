@@ -58,7 +58,6 @@ import           Market.Types               (NFTSale(..), SaleAction(..), SaleSc
 import           Market.Onchain             ( Sale, typedBuyValidator, buyValidator )
 
 
-
 startSale :: NFTSale -> Contract w SaleSchema Text ()
 startSale nfts = do 
     utxos <- utxosAt (pubKeyHashAddress $ nSeller nfts)
