@@ -10,4 +10,4 @@ NFT Marketplace on the Cardano Blockchain. Powered by Plutus Smart Contracts
 
 ### To compile to .plutus code
 * Run `cabal run market-plutus <seller's address (addr1...)> <price> <TokenName> <CurrencySymbol>`
-* For example `cabal run market-plutus addr1vyzftlax285dex3ggs54cpqe08efgs9n2n92mts09h3slwsrvwg9h 34 Vendere 66`
+* For example `cabal run market-plutus addr_test1vp95x4dv7hj5n4xdyeqgwg73erv84xxmwkvwgza3e5ang0sgz6rzm 34 Vendere 66`
