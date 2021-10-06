@@ -20,7 +20,7 @@ import           Codec.Serialise          ( serialise )
 import           Cardano.Api.Shelley      (PlutusScript (..), PlutusScriptV1)
 import qualified PlutusTx
 import PlutusTx.Prelude as Plutus
-    ( Bool(..), Eq((==)), (.), (&&), traceIfFalse, Integer )
+    ( Bool(..), Eq((==)), (.), (&&), traceIfFalse, Integer, BuiltinData )
 import Ledger
     ( TokenName,
       PubKeyHash,
@@ -40,10 +40,9 @@ import qualified Plutus.V1.Ledger.Ada as Ada (lovelaceValueOf)
 import           Market.Types               (NFTSale(..), SaleAction(..))
 
 
-
-
-mkBuyValidator :: NFTSale -> () -> SaleAction -> ScriptContext -> Bool
-mkBuyValidator nfts () r ctx =
+{-# INLINABLE mkBuyValidator #-}
+mkBuyValidator :: NFTSale -> BuiltinData -> SaleAction -> ScriptContext -> Bool
+mkBuyValidator nfts _ r ctx =
     case r of
         Buy   -> traceIfFalse "Buy output invalid" checkBuyOut
         Close -> traceIfFalse "No rights to perform this action" checkCloser &&
@@ -85,7 +84,7 @@ mkBuyValidator nfts () r ctx =
 
 data Sale
 instance Scripts.ValidatorTypes Sale where
-    type instance DatumType Sale    = ()
+    type instance DatumType Sale    = BuiltinData
     type instance RedeemerType Sale = SaleAction
 
 
@@ -94,7 +93,7 @@ typedBuyValidator chn = Scripts.mkTypedValidator @Sale
     ($$(PlutusTx.compile [|| mkBuyValidator ||]) `PlutusTx.applyCode` PlutusTx.liftCode chn)
     $$(PlutusTx.compile [|| wrap ||])
   where
-    wrap = Scripts.wrapValidator @() @SaleAction
+    wrap = Scripts.wrapValidator @BuiltinData @SaleAction
 
 
 buyValidator :: NFTSale -> Validator

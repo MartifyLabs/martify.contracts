@@ -17,6 +17,7 @@ import Market.Types   (NFTSale(..))
 main :: IO ()
 main = do
     [nftSeller, nftPrice, nftName, nftSymbol] <- getArgs
+    -- We convert the address provided (format addr1...) from Bech32 to Base16 (pkhs)
     let Right (_, dataPart) = decode $ fromString nftSeller
     case dataPartToBytes dataPart of
         Nothing    -> print ("error" :: [Char])

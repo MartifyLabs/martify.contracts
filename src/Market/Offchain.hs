@@ -32,6 +32,7 @@ import Plutus.Contract as Contract
 import qualified PlutusTx
 import PlutusTx.Prelude as Plutus
     ( return, Bool, Maybe(..), Eq((==)), (<$>), ($) )
+import PlutusTx.IsData (ToData(toBuiltinData))
 import Ledger
     ( scriptAddress,
       pubKeyHash,
@@ -58,13 +59,15 @@ import           Market.Types               (NFTSale(..), SaleAction(..), SaleSc
 import           Market.Onchain             ( Sale, typedBuyValidator, buyValidator )
 
 
+
 startSale :: NFTSale -> Contract w SaleSchema Text ()
 startSale nfts = do 
     utxos <- utxosAt (pubKeyHashAddress $ nSeller nfts)
-    let val     = Value.singleton (nCurrency nfts) (nToken nfts) 1
+    let dat     = toBuiltinData ()
+        val     = Value.singleton (nCurrency nfts) (nToken nfts) 1
         lookups = Constraints.unspentOutputs utxos                         <>
                   Constraints.typedValidatorLookups (typedBuyValidator nfts)
-        tx      = Constraints.mustPayToTheScript () val
+        tx      = Constraints.mustPayToTheScript dat val
     ledgerTx <- submitTxConstraintsWith @Sale lookups tx
     void $ awaitTxConfirmed $ txId ledgerTx
     Contract.logInfo @String "startSale transaction confirmed"
