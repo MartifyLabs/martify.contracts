@@ -13,3 +13,4 @@ NFT Marketplace on the Cardano Blockchain. Powered by Plutus Smart Contracts
 * For example 
   
   `cabal run market-plutus addr_test1vp95x4dv7hj5n4xdyeqgwg73erv84xxmwkvwgza3e5ang0sgz6rzm 34 Vendere 66`
+* Note : the price is in Lovelace, not Ada (temporary)
