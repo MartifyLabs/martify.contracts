@@ -34,7 +34,7 @@ import Ledger
       unValidatorScript )
 import qualified Ledger.Typed.Scripts      as Scripts
 import qualified Plutus.V1.Ledger.Scripts as Plutus
-import           Ledger.Value              as Value ( singleton, geq )
+import           Ledger.Value              as Value ( geq, valueOf )
 import qualified Plutus.V1.Ledger.Ada as Ada (lovelaceValueOf)
 
 import           Market.Types               (NFTSale(..), SaleAction(..))
@@ -66,7 +66,7 @@ mkBuyValidator nfts _ r ctx =
     checkBuyOut :: Bool
     checkBuyOut = let os = [ o | o <- txInfoOutputs info, txOutValue o `geq` Ada.lovelaceValueOf price && txOutAddress o == pubKeyHashAddress seller ] in
         case os of
-            [_] -> let os' = [ o | o <- txInfoOutputs info, txOutValue o == Value.singleton cs tn 1 ] in
+            [_] -> let os' = [ o | o <- txInfoOutputs info, valueOf (txOutValue o) cs tn == 1 ] in
                     case os' of
                         [_] -> True
                         _   -> False
@@ -76,7 +76,7 @@ mkBuyValidator nfts _ r ctx =
     checkCloser = txSignedBy info (nSeller nfts)
 
     checkCloseOut :: Bool
-    checkCloseOut = let os = [ o | o <- txInfoOutputs info, txOutValue o == Value.singleton cs tn 1 && txOutAddress o == pubKeyHashAddress seller ] in
+    checkCloseOut = let os = [ o | o <- txInfoOutputs info, valueOf (txOutValue o) cs tn == 1 && txOutAddress o == pubKeyHashAddress seller ] in
         case os of
             [_] -> True
             _   -> False
