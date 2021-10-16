@@ -24,7 +24,7 @@ NFT Marketplace on the Cardano Blockchain. Powered by Plutus Smart Contracts
 * Export protocol params in **both** folders `cardano-cli query protocol-parameters --$testnet --out-file protocol.json`
 * I suggest downloading Daedalus testnet [Daedalus-testnet](https://testnets.cardano.org/en/testnets/cardano/get-started/wallet/)
 * Fund the new Daedalus wallet using the testnet faucet at [faucet](https://developers.cardano.org/docs/integrate-cardano/testnet-faucet)
-* From daedalus, fund the two cli addresses (`w1` and `w2`) (with the faucet you should get 100ADA so fund w1 with 500 and w2 with 500)
+* From daedalus, fund the two cli addresses (`w1` and `w2`) (with the faucet you should get 1000ADA so fund w1 with 500 and w2 with 500)
 ##### Now we have to mint some tokens (only in w1) that will be the NFTs we sell to test the validator
 * Go in `w1` folder and execute `address=$(cat payment.addr)`
 * Run `cardano-cli query utxo --address $address --$testnet`
