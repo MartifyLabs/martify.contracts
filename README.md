@@ -11,8 +11,8 @@ A buyer can then unlock the NFT by submitting a transaction verifying the severa
 * To modify the testing scenario, open and modify the `src/Market/Trace.hs` file
 
 ### To compile to .plutus code
-* Run `cabal run market-plutus <seller's address (addr1...)> <price> <TokenName> <CurrencySymbol>`
-* For example `cabal run market-plutus addr1vyzftlax285dex3ggs54cpqe08efgs9n2n92mts09h3slwsrvwg9h 34 Vendere 66`
+* Run `cabal run market-plutus`
+
 
 ### To test against a validator
 #### Do the following only the first time
@@ -52,7 +52,7 @@ A buyer can then unlock the NFT by submitting a transaction verifying the severa
 * `cardano-cli query utxo --address $address --$testnet`
 * Now you should have 100 Vendere tokens at your w1 wallet (it can take some time to appear). We'll be using those to test our validator
 
-#### Do the following every time you test after completing initial setup above
+#### Do the following every time you test after completing initial setup above (**OUTDATED**, new instructions coming soon)
 ##### Send NFT to script
 * Start a testnet node and see where is `node.socket`
 * `CARDANO_NODE_SOCKET_PATH=/absolute/path/to/node.socket`
