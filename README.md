@@ -11,5 +11,4 @@ A buyer can then unlock the NFT by submitting a transaction verifying the severa
 * To modify the testing scenario, open and modify the `src/Market/Trace.hs` file
 
 ### To compile to .plutus code
-* Run `cabal run market-plutus <seller's address (addr1...)> <price> <TokenName> <CurrencySymbol>`
-* For example `cabal run market-plutus addr1vyzftlax285dex3ggs54cpqe08efgs9n2n92mts09h3slwsrvwg9h 34 Vendere 66`
+* Run `cabal run market-plutus`
