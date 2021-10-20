@@ -52,7 +52,7 @@ A buyer can then unlock the NFT by submitting a transaction verifying the severa
 * `cardano-cli query utxo --address $address --$testnet`
 * Now you should have 100 Vendere tokens at your w1 wallet (it can take some time to appear). We'll be using those to test our validator
 
-#### Do the following every time you test after completing initial setup above
+#### Do the following every time you test after completing initial setup above (**OUTDATED**, new instructions coming soon)
 ##### Send NFT to script
 * Start a testnet node and see where is `node.socket`
 * `CARDANO_NODE_SOCKET_PATH=/absolute/path/to/node.socket`
