@@ -11,6 +11,7 @@ module Market.Onchain
     , typedBuyValidator
     , Sale
     , buyValidator
+    , nftDatum
     ) where
 
 import qualified Data.ByteString.Lazy     as LB
@@ -20,11 +21,14 @@ import           Codec.Serialise          ( serialise )
 import           Cardano.Api.Shelley      (PlutusScript (..), PlutusScriptV1)
 import qualified PlutusTx
 import PlutusTx.Prelude as Plutus
-    ( Bool(..), Eq((==)), (.), (&&), traceIfFalse, Integer, BuiltinData )
+    ( Bool(..), Eq((==)), (.), ($), (&&), traceIfFalse, Integer, Maybe )
 import Ledger
     ( TokenName,
       PubKeyHash,
       CurrencySymbol,
+      DatumHash,
+      Datum(..),
+      txOutDatum,
       pubKeyHashAddress,
       txSignedBy,
       ScriptContext(scriptContextTxInfo),
@@ -34,15 +38,22 @@ import Ledger
       unValidatorScript )
 import qualified Ledger.Typed.Scripts      as Scripts
 import qualified Plutus.V1.Ledger.Scripts as Plutus
-import           Ledger.Value              as Value ( geq, valueOf )
+import           Ledger.Value              as Value ( singleton, geq, valueOf )
 import qualified Plutus.V1.Ledger.Ada as Ada (lovelaceValueOf)
 
 import           Market.Types               (NFTSale(..), SaleAction(..))
 
 
+{-# INLINABLE nftDatum #-}
+nftDatum :: TxOut -> (DatumHash -> Maybe Datum) -> Maybe NFTSale
+nftDatum o f = do
+    dh <- txOutDatum o
+    Datum d <- f dh
+    PlutusTx.fromBuiltinData d
+
 {-# INLINABLE mkBuyValidator #-}
-mkBuyValidator :: NFTSale -> BuiltinData -> SaleAction -> ScriptContext -> Bool
-mkBuyValidator nfts _ r ctx =
+mkBuyValidator :: NFTSale -> SaleAction -> ScriptContext -> Bool
+mkBuyValidator nfts r ctx =
     case r of
         Buy   -> traceIfFalse "Buy output invalid" checkBuyOut
         Close -> traceIfFalse "No rights to perform this action" checkCloser &&
@@ -64,19 +75,19 @@ mkBuyValidator nfts _ r ctx =
     price = nPrice nfts
 
     checkBuyOut :: Bool
-    checkBuyOut = let os = [ o | o <- txInfoOutputs info, txOutValue o `geq` Ada.lovelaceValueOf price && txOutAddress o == pubKeyHashAddress seller ] in
+    checkBuyOut = let os = [ o | o <- txInfoOutputs info, txOutValue o `geq` Ada.lovelaceValueOf price ] in -- && txOutAddress o == pubKeyHashAddress seller ] in
         case os of
-            [_] -> let os' = [ o | o <- txInfoOutputs info, valueOf (txOutValue o) cs tn == 1 ] in
+            [] -> False
+            _  -> let os' = [ o | o <- txInfoOutputs info, valueOf (txOutValue o) cs tn == 1 ] in
                     case os' of
                         [_] -> True
                         _   -> False
-            _  -> False
 
     checkCloser :: Bool
     checkCloser = txSignedBy info (nSeller nfts)
 
     checkCloseOut :: Bool
-    checkCloseOut = let os = [ o | o <- txInfoOutputs info, valueOf (txOutValue o) cs tn == 1 && txOutAddress o == pubKeyHashAddress seller ] in
+    checkCloseOut = let os = [ o | o <- txInfoOutputs info, txOutValue o == Value.singleton cs tn 1 && txOutAddress o == pubKeyHashAddress seller ] in
         case os of
             [_] -> True
             _   -> False
@@ -84,26 +95,26 @@ mkBuyValidator nfts _ r ctx =
 
 data Sale
 instance Scripts.ValidatorTypes Sale where
-    type instance DatumType Sale    = BuiltinData
+    type instance DatumType Sale    = NFTSale
     type instance RedeemerType Sale = SaleAction
 
 
-typedBuyValidator :: NFTSale -> Scripts.TypedValidator Sale
-typedBuyValidator chn = Scripts.mkTypedValidator @Sale
-    ($$(PlutusTx.compile [|| mkBuyValidator ||]) `PlutusTx.applyCode` PlutusTx.liftCode chn)
+typedBuyValidator :: Scripts.TypedValidator Sale
+typedBuyValidator = Scripts.mkTypedValidator @Sale
+    $$(PlutusTx.compile [|| mkBuyValidator ||])
     $$(PlutusTx.compile [|| wrap ||])
   where
-    wrap = Scripts.wrapValidator @BuiltinData @SaleAction
+    wrap = Scripts.wrapValidator @NFTSale @SaleAction
 
 
-buyValidator :: NFTSale -> Validator
-buyValidator = Scripts.validatorScript . typedBuyValidator
+buyValidator :: Validator
+buyValidator = Scripts.validatorScript typedBuyValidator
 
-buyScript :: NFTSale -> Plutus.Script
-buyScript = Ledger.unValidatorScript . buyValidator
+buyScript :: Plutus.Script
+buyScript = Ledger.unValidatorScript buyValidator
 
-buyScriptAsShortBs :: NFTSale -> SBS.ShortByteString
-buyScriptAsShortBs = SBS.toShort . LB.toStrict . serialise . buyScript
+buyScriptAsShortBs :: SBS.ShortByteString
+buyScriptAsShortBs = SBS.toShort . LB.toStrict $ serialise buyScript
 
-apiBuyScript :: NFTSale -> PlutusScript PlutusScriptV1
-apiBuyScript = PlutusScriptSerialised . buyScriptAsShortBs
+apiBuyScript :: PlutusScript PlutusScriptV1
+apiBuyScript = PlutusScriptSerialised  buyScriptAsShortBs
