@@ -35,7 +35,8 @@ import Ledger
       TxInfo(txInfoOutputs),
       Validator,
       TxOut(txOutValue, txOutAddress),
-      unValidatorScript )
+      unValidatorScript,
+      getContinuingOutputs )
 import qualified Ledger.Typed.Scripts      as Scripts
 import qualified Plutus.V1.Ledger.Scripts as Plutus
 import           Ledger.Value              as Value ( singleton, geq, valueOf )
@@ -55,7 +56,8 @@ nftDatum o f = do
 mkBuyValidator :: NFTSale -> SaleAction -> ScriptContext -> Bool
 mkBuyValidator nfts r ctx =
     case r of
-        Buy   -> traceIfFalse "Buy output invalid" checkBuyOut
+        Buy   -> traceIfFalse "Buy output invalid" checkBuyOut &&
+                 traceIfFalse "NFT still in script" checkContinuing
         Close -> traceIfFalse "No rights to perform this action" checkCloser &&
                  traceIfFalse "Close output invalid" checkCloseOut
   where
@@ -75,13 +77,19 @@ mkBuyValidator nfts r ctx =
     price = nPrice nfts
 
     checkBuyOut :: Bool
-    checkBuyOut = let os = [ o | o <- txInfoOutputs info, txOutValue o `geq` Ada.lovelaceValueOf price ] in -- && txOutAddress o == pubKeyHashAddress seller ] in
+    checkBuyOut = let os = [ o | o <- txInfoOutputs info, txOutValue o `geq` Ada.lovelaceValueOf price && txOutAddress o == pubKeyHashAddress seller ] in
         case os of
             [] -> False
             _  -> let os' = [ o | o <- txInfoOutputs info, valueOf (txOutValue o) cs tn == 1 ] in
                     case os' of
                         [_] -> True
                         _   -> False
+
+    checkContinuing :: Bool
+    checkContinuing = let os = [ o | o <- getContinuingOutputs ctx, valueOf (txOutValue o) cs tn == 1 ] in
+        case os of
+            [] -> True
+            _  -> False
 
     checkCloser :: Bool
     checkCloser = txSignedBy info (nSeller nfts)
