@@ -25,17 +25,17 @@ import Market.Types    (StartParams(..), BuyParams(..))
 
 nftEx1 :: StartParams
 nftEx1 = StartParams
-    { sPrice    = 10_000_000
+    { sPrice = 10_000_000
     , sTn    = "Vendere"
-    , sCs = "66"
+    , sCs    = "66"
     } -- This is an example token, 
       -- As these are the parameters of the validator, this info should be provided by the user of the contract
 
 nftEx2 :: StartParams
 nftEx2 = StartParams
-    { sPrice    = 10_000_000
+    { sPrice = 10_000_000
     , sTn    = "Vendere2"
-    , sCs = "66"
+    , sCs    = "66"
     }
 
 nftEx1' :: BuyParams
@@ -74,6 +74,6 @@ test = do
         void $ Emulator.waitNSlots 1
         callEndpoint @"start" h3 nftEx2
         void $ Emulator.waitNSlots 1
-        callEndpoint @"buy" h1 nftEx2'
+        callEndpoint @"buy" h4 nftEx2'
         void $ Emulator.waitNSlots 1
     

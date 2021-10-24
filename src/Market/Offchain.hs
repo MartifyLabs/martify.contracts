@@ -13,7 +13,7 @@ import           Data.Monoid               as Mnd ( (<>) )
 import           Control.Monad             ( void, forever )
 import           Data.Aeson                (ToJSON)
 import           Data.Text                 (Text)
-import           Prelude                   (String)
+import           Prelude                   (String, fromIntegral, ceiling, Float, (*))
 
 
 import Plutus.Contract as Contract
@@ -59,7 +59,7 @@ import Plutus.ChainIndex.Tx ( ChainIndexTx(_citxData) )
 
 import           Market.Types               (NFTSale(..), SaleAction(..), SaleSchema, StartParams(..), BuyParams(..))
 import           Market.Onchain             ( Sale, typedBuyValidator, buyValidator, nftDatum )
-
+import           Utility                    (companyPkh)
 
 
 startSale :: StartParams -> Contract w SaleSchema Text ()
@@ -69,7 +69,7 @@ startSale sp = do
     let val     = Value.singleton (sCs sp) (sTn sp) 1
         dat     = NFTSale { nSeller = pkh, nToken = sTn sp, nCurrency = sCs sp, nPrice = sPrice sp }
         lookups = Constraints.unspentOutputs utxos                         <>
-                  Constraints.typedValidatorLookups typedBuyValidator
+                  Constraints.typedValidatorLookups (typedBuyValidator companyPkh)
         tx      = Constraints.mustPayToTheScript dat val
     ledgerTx <- submitTxConstraintsWith @Sale lookups tx
     void $ awaitTxConfirmed $ txId ledgerTx
@@ -85,13 +85,15 @@ buy bp = do
         Just (oref, o, nfts) -> do
             let r       = Redeemer $ PlutusTx.toBuiltinData Buy
                 val     = Value.singleton (nCurrency nfts) (nToken nfts) 1 <> Ada.lovelaceValueOf 1724100
-                valAda  = Ada.lovelaceValueOf $ nPrice nfts
-                lookups = Constraints.typedValidatorLookups typedBuyValidator <>
+                valAdaS = Ada.lovelaceValueOf (ceiling (0.98 Prelude.* fromIntegral (nPrice nfts) :: Float))
+                valAdaF = Ada.lovelaceValueOf (ceiling (0.2 Prelude.* fromIntegral (nPrice nfts) :: Float))
+                lookups = Constraints.typedValidatorLookups (typedBuyValidator companyPkh) <>
                           Constraints.unspentOutputs (Map.singleton oref o)   <>
-                          Constraints.otherScript buyValidator
+                          Constraints.otherScript (buyValidator companyPkh)
                 tx      = Constraints.mustSpendScriptOutput oref r          <>
                           Constraints.mustPayToPubKey pkh val               <>
-                          Constraints.mustPayToPubKey (nSeller nfts) valAda
+                          Constraints.mustPayToPubKey (nSeller nfts) valAdaS <>
+                          Constraints.mustPayToPubKey companyPkh valAdaF
             ledgerTx <- submitTxConstraintsWith lookups tx
             void $ awaitTxConfirmed $ txId ledgerTx
             Contract.logInfo @String "buy transaction confirmed"
@@ -105,8 +107,8 @@ close bp = do
         Just (oref, o, nfts) -> do
             let r       = Redeemer $ PlutusTx.toBuiltinData Close
                 val     = Value.singleton (nCurrency nfts) (nToken nfts) 1 <> Ada.lovelaceValueOf 1724100
-                lookups = Constraints.typedValidatorLookups typedBuyValidator <>
-                          Constraints.otherScript buyValidator                <>
+                lookups = Constraints.typedValidatorLookups (typedBuyValidator companyPkh) <>
+                          Constraints.otherScript (buyValidator companyPkh)                <>
                           Constraints.unspentOutputs (Map.singleton oref o)
                 tx      = Constraints.mustSpendScriptOutput oref r      <>
                           Constraints.mustPayToPubKey (nSeller nfts) val
@@ -117,7 +119,7 @@ close bp = do
 
 findSale :: (AsContractError e, ToJSON e) => (CurrencySymbol, TokenName) -> Contract w SaleSchema e (Maybe (TxOutRef, ChainIndexTxOut, NFTSale))
 findSale (cs, tn) = do
-    utxos <- Map.filter f <$> utxosTxOutTxAt (scriptAddress buyValidator)
+    utxos <- Map.filter f <$> utxosTxOutTxAt (scriptAddress $ buyValidator companyPkh)
     return $ case Map.toList utxos of
         [(oref, (o, citx))] -> do
             nftSale <- nftDatum (toTxOut o) $ \dh -> Map.lookup dh $ _citxData citx
