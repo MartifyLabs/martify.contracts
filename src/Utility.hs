@@ -2,7 +2,8 @@
 
 module Utility
     ( walletPubKeyHash
-    , wallet ) where
+    , wallet
+    , companyPkh ) where
 
 import           Plutus.V1.Ledger.Crypto (PubKeyHash)
 import           Ledger (pubKeyHash)
@@ -16,3 +17,6 @@ wallet = fromWalletNumber . WalletNumber
 
 walletPubKeyHash :: Wallet -> PubKeyHash
 walletPubKeyHash = pubKeyHash . walletPubKey
+
+companyPkh :: PubKeyHash
+companyPkh = walletPubKeyHash $ wallet 1

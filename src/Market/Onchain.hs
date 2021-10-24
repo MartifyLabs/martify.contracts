@@ -22,7 +22,7 @@ import           Codec.Serialise          ( serialise )
 import           Cardano.Api.Shelley      (PlutusScript (..), PlutusScriptV1)
 import qualified PlutusTx
 import PlutusTx.Prelude as Plutus
-    ( Bool(..), Eq((==)), (.), ($), (&&), traceIfFalse, Integer, Maybe, (>=) )
+    ( Bool(..), Eq((==)), (.), (&&), traceIfFalse, Integer, Maybe, (>=), fromInteger, (*), (%) )
 import Ledger
     ( TokenName,
       PubKeyHash(..),
@@ -40,7 +40,7 @@ import Ledger
 import qualified Ledger.Typed.Scripts      as Scripts
 import qualified Plutus.V1.Ledger.Scripts as Plutus
 import           Ledger.Value              as Value ( valueOf )
-import qualified Plutus.V1.Ledger.Ada as Ada (lovelaceOf, fromValue)
+import qualified Plutus.V1.Ledger.Ada as Ada (fromValue, Ada (getLovelace))
 
 import           Market.Types               (NFTSale(..), SaleAction(..))
 
@@ -53,11 +53,12 @@ nftDatum o f = do
     PlutusTx.fromBuiltinData d
 
 {-# INLINABLE mkBuyValidator #-}
-mkBuyValidator :: NFTSale -> SaleAction -> ScriptContext -> Bool
-mkBuyValidator nfts r ctx =
+mkBuyValidator :: PubKeyHash -> NFTSale -> SaleAction -> ScriptContext -> Bool
+mkBuyValidator pkh nfts r ctx =
     case r of
         Buy   -> traceIfFalse "NFT not sent to buyer" checkNFTOut &&
-                 traceIfFalse "Seller not paid" checkSellerOut
+                 traceIfFalse "Seller not paid" checkSellerOut &&
+                 traceIfFalse "Fee not paid" checkFee
         Close -> traceIfFalse "No rights to perform this action" checkCloser &&
                  traceIfFalse "Close output invalid" checkCloseOut
   where
@@ -84,7 +85,10 @@ mkBuyValidator nfts r ctx =
     checkNFTOut = valueOf (valuePaidTo info sig) cs tn == 1
     
     checkSellerOut :: Bool
-    checkSellerOut = Ada.fromValue (valuePaidTo info seller) >= Ada.lovelaceOf price
+    checkSellerOut = fromInteger (Ada.getLovelace (Ada.fromValue (valuePaidTo info seller))) >= 98 % 100 * fromInteger price
+
+    checkFee :: Bool
+    checkFee = fromInteger (Ada.getLovelace (Ada.fromValue (valuePaidTo info pkh))) >= 2 % 100 * fromInteger price
 
     checkCloser :: Bool
     checkCloser = txSignedBy info seller
@@ -99,22 +103,22 @@ instance Scripts.ValidatorTypes Sale where
     type instance RedeemerType Sale = SaleAction
 
 
-typedBuyValidator :: Scripts.TypedValidator Sale
-typedBuyValidator = Scripts.mkTypedValidator @Sale
-    $$(PlutusTx.compile [|| mkBuyValidator ||])
+typedBuyValidator :: PubKeyHash -> Scripts.TypedValidator Sale
+typedBuyValidator pkh = Scripts.mkTypedValidator @Sale
+    ($$(PlutusTx.compile [|| mkBuyValidator ||]) `PlutusTx.applyCode` PlutusTx.liftCode pkh)
     $$(PlutusTx.compile [|| wrap ||])
   where
     wrap = Scripts.wrapValidator @NFTSale @SaleAction
 
 
-buyValidator :: Validator
-buyValidator = Scripts.validatorScript typedBuyValidator
+buyValidator :: PubKeyHash -> Validator
+buyValidator = Scripts.validatorScript . typedBuyValidator
 
-buyScript :: Plutus.Script
-buyScript = Ledger.unValidatorScript buyValidator
+buyScript :: PubKeyHash -> Plutus.Script
+buyScript = Ledger.unValidatorScript . buyValidator
 
-buyScriptAsShortBs :: SBS.ShortByteString
-buyScriptAsShortBs = SBS.toShort . LB.toStrict $ serialise buyScript
+buyScriptAsShortBs :: PubKeyHash -> SBS.ShortByteString
+buyScriptAsShortBs = SBS.toShort . LB.toStrict . serialise . buyScript
 
-apiBuyScript :: PlutusScript PlutusScriptV1
-apiBuyScript = PlutusScriptSerialised buyScriptAsShortBs
+apiBuyScript :: PubKeyHash -> PlutusScript PlutusScriptV1
+apiBuyScript = PlutusScriptSerialised . buyScriptAsShortBs
