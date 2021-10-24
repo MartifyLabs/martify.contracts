@@ -8,6 +8,7 @@
 
 module Market.Onchain
     ( apiBuyScript
+    , buyScriptAsShortBs
     , typedBuyValidator
     , Sale
     , buyValidator
@@ -21,26 +22,25 @@ import           Codec.Serialise          ( serialise )
 import           Cardano.Api.Shelley      (PlutusScript (..), PlutusScriptV1)
 import qualified PlutusTx
 import PlutusTx.Prelude as Plutus
-    ( Bool(..), Eq((==)), (.), ($), (&&), traceIfFalse, Integer, Maybe )
+    ( Bool(..), Eq((==)), (.), ($), (&&), traceIfFalse, Integer, Maybe, (>=) )
 import Ledger
     ( TokenName,
-      PubKeyHash,
+      PubKeyHash(..),
       CurrencySymbol,
       DatumHash,
       Datum(..),
       txOutDatum,
-      pubKeyHashAddress,
       txSignedBy,
       ScriptContext(scriptContextTxInfo),
-      TxInfo(txInfoOutputs),
+      TxInfo,
       Validator,
-      TxOut(txOutValue, txOutAddress),
-      unValidatorScript,
-      getContinuingOutputs )
+      TxOut,
+      txInfoSignatories,
+      unValidatorScript, valuePaidTo )
 import qualified Ledger.Typed.Scripts      as Scripts
 import qualified Plutus.V1.Ledger.Scripts as Plutus
-import           Ledger.Value              as Value ( singleton, geq, valueOf )
-import qualified Plutus.V1.Ledger.Ada as Ada (lovelaceValueOf)
+import           Ledger.Value              as Value ( valueOf )
+import qualified Plutus.V1.Ledger.Ada as Ada (lovelaceOf, fromValue)
 
 import           Market.Types               (NFTSale(..), SaleAction(..))
 
@@ -56,8 +56,8 @@ nftDatum o f = do
 mkBuyValidator :: NFTSale -> SaleAction -> ScriptContext -> Bool
 mkBuyValidator nfts r ctx =
     case r of
-        Buy   -> traceIfFalse "Buy output invalid" checkBuyOut &&
-                 traceIfFalse "NFT still in script" checkContinuing
+        Buy   -> traceIfFalse "NFT not sent to buyer" checkNFTOut &&
+                 traceIfFalse "Seller not paid" checkSellerOut
         Close -> traceIfFalse "No rights to perform this action" checkCloser &&
                  traceIfFalse "Close output invalid" checkCloseOut
   where
@@ -73,32 +73,24 @@ mkBuyValidator nfts r ctx =
     seller :: PubKeyHash
     seller = nSeller nfts
 
+    sig :: PubKeyHash
+    sig = case txInfoSignatories info of
+            [pubKeyHash] -> pubKeyHash
+
     price :: Integer
     price = nPrice nfts
 
-    checkBuyOut :: Bool
-    checkBuyOut = let os = [ o | o <- txInfoOutputs info, txOutValue o `geq` Ada.lovelaceValueOf price && txOutAddress o == pubKeyHashAddress seller ] in
-        case os of
-            [] -> False
-            _  -> let os' = [ o | o <- txInfoOutputs info, valueOf (txOutValue o) cs tn == 1 ] in
-                    case os' of
-                        [_] -> True
-                        _   -> False
-
-    checkContinuing :: Bool
-    checkContinuing = let os = [ o | o <- getContinuingOutputs ctx, valueOf (txOutValue o) cs tn == 1 ] in
-        case os of
-            [] -> True
-            _  -> False
+    checkNFTOut :: Bool
+    checkNFTOut = valueOf (valuePaidTo info sig) cs tn == 1
+    
+    checkSellerOut :: Bool
+    checkSellerOut = Ada.fromValue (valuePaidTo info seller) >= Ada.lovelaceOf price
 
     checkCloser :: Bool
-    checkCloser = txSignedBy info (nSeller nfts)
+    checkCloser = txSignedBy info seller
 
     checkCloseOut :: Bool
-    checkCloseOut = let os = [ o | o <- txInfoOutputs info, txOutValue o == Value.singleton cs tn 1 && txOutAddress o == pubKeyHashAddress seller ] in
-        case os of
-            [_] -> True
-            _   -> False
+    checkCloseOut = valueOf (valuePaidTo info seller) cs tn == 1
 
 
 data Sale
@@ -125,4 +117,4 @@ buyScriptAsShortBs :: SBS.ShortByteString
 buyScriptAsShortBs = SBS.toShort . LB.toStrict $ serialise buyScript
 
 apiBuyScript :: PlutusScript PlutusScriptV1
-apiBuyScript = PlutusScriptSerialised  buyScriptAsShortBs
+apiBuyScript = PlutusScriptSerialised buyScriptAsShortBs

@@ -1,4 +1,3 @@
-{-# LANGUAGE NoImplicitPrelude #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Utility
@@ -8,7 +7,9 @@ module Utility
 import           Plutus.V1.Ledger.Crypto (PubKeyHash)
 import           Ledger (pubKeyHash)
 import           Wallet.Emulator.Wallet (Wallet, walletPubKey, fromWalletNumber, WalletNumber(..))
-import           PlutusTx.Prelude ((.), Integer)
+import           PlutusTx.Prelude ((.))
+
+import           Prelude hiding ((.))
 
 wallet :: Integer -> Wallet
 wallet = fromWalletNumber . WalletNumber

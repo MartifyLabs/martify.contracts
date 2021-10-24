@@ -84,10 +84,10 @@ buy bp = do
         Nothing -> Contract.logError @String "No sale found"
         Just (oref, o, nfts) -> do
             let r       = Redeemer $ PlutusTx.toBuiltinData Buy
-                val     = Value.singleton (nCurrency nfts) (nToken nfts) 1 <> Ada.lovelaceValueOf 2000000
+                val     = Value.singleton (nCurrency nfts) (nToken nfts) 1 <> Ada.lovelaceValueOf 1724100
                 valAda  = Ada.lovelaceValueOf $ nPrice nfts
                 lookups = Constraints.typedValidatorLookups typedBuyValidator <>
-                          Constraints.unspentOutputs (Map.singleton oref o)          <>
+                          Constraints.unspentOutputs (Map.singleton oref o)   <>
                           Constraints.otherScript buyValidator
                 tx      = Constraints.mustSpendScriptOutput oref r          <>
                           Constraints.mustPayToPubKey pkh val               <>
@@ -104,7 +104,7 @@ close bp = do
         Nothing -> Contract.logError @String "No sale found"
         Just (oref, o, nfts) -> do
             let r       = Redeemer $ PlutusTx.toBuiltinData Close
-                val     = Value.singleton (nCurrency nfts) (nToken nfts) 1
+                val     = Value.singleton (nCurrency nfts) (nToken nfts) 1 <> Ada.lovelaceValueOf 1724100
                 lookups = Constraints.typedValidatorLookups typedBuyValidator <>
                           Constraints.otherScript buyValidator                <>
                           Constraints.unspentOutputs (Map.singleton oref o)

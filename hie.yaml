@@ -6,3 +6,6 @@ cradle:
     
     - path: "./app/market-plutus.hs"
       component: "exe:market-plutus"
+
+    - path: "./app/datum-json.hs"
+      component: "exe:datum-json"

@@ -37,6 +37,7 @@ library
                      , base ^>=4.14.1.0
                      , base16-bytestring
                      , binary
+                     , bech32
                      , containers
                      , bytestring
                      , data-default
@@ -69,4 +70,20 @@ executable market-plutus
 
   build-depends:        cardano-api
                       , vendere
+                      , plutus-ledger-api
+                      , bytestring
+                      , cardano-ledger-alonzo
+
+
+executable datum-json
+  import:               base, project-config
+  hs-source-dirs:       app
+  main-is:              datum-json.hs
+  ghc-options:          -threaded -rtsopts "-with-rtsopts=-T"
+
+  build-depends:        vendere
+                      , bytestring
+                      , cardano-api
+                      , plutus-tx
+                      , aeson
 
