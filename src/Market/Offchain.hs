@@ -32,7 +32,7 @@ import Plutus.Contract as Contract
       Promise(awaitPromise) )
 import qualified PlutusTx
 import PlutusTx.Prelude as Plutus
-    ( return, Bool, Maybe(..), Eq((==)), (<$>), ($) )
+    ( return, Bool, Maybe(..), Eq((==)), (<$>), ($), Integer )
 import Ledger
     ( scriptAddress,
       pubKeyHash,
@@ -99,6 +99,25 @@ buy bp = do
             Contract.logInfo @String "buy transaction confirmed"
 
 
+update :: (BuyParams, Integer) -> Contract w SaleSchema Text ()
+update (bp, newprice) = do
+    sale <- findSale (bCs bp, bTn bp)
+    case sale of
+        Nothing -> Contract.logError @String "No sale found"
+        Just (oref, o, nfts) -> do
+            let r       = Redeemer $ PlutusTx.toBuiltinData Update
+                val     = Value.singleton (nCurrency nfts) (nToken nfts) 1
+                dat     = nfts { nPrice = newprice }
+                lookups = Constraints.typedValidatorLookups (typedBuyValidator companyPkh) <>
+                          Constraints.otherScript (buyValidator companyPkh)                <>
+                          Constraints.unspentOutputs (Map.singleton oref o)
+                tx      = Constraints.mustSpendScriptOutput oref r <>
+                          Constraints.mustPayToTheScript dat val   
+            ledgerTx <- submitTxConstraintsWith lookups tx
+            void $ awaitTxConfirmed $ txId ledgerTx
+            Contract.logInfo @String "Price updated"
+
+
 close :: BuyParams -> Contract w SaleSchema Text ()
 close bp = do
     sale <- findSale (bCs bp, bTn bp)
@@ -135,8 +154,9 @@ endpoints :: Contract () SaleSchema Text ()
 endpoints = forever
           $ handleError logError
           $ awaitPromise
-          $ start' `select` buy' `select` close'
+          $ start' `select` buy' `select` close' `select` update'
   where
-    start' = endpoint @"start" $ \nfts -> startSale nfts
-    buy'   = endpoint @"buy"   $ \nfts -> buy nfts
-    close' = endpoint @"close" $ \nfts -> close nfts
+    start'  = endpoint @"start"  $ \nfts      -> startSale nfts
+    buy'    = endpoint @"buy"    $ \nfts      -> buy nfts
+    close'  = endpoint @"close"  $ \nfts      -> close nfts
+    update' = endpoint @"update" $ \(nfts, x) -> update (nfts, x)

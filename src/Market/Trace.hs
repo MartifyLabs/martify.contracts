@@ -74,6 +74,6 @@ test = do
         void $ Emulator.waitNSlots 1
         callEndpoint @"start" h3 nftEx2
         void $ Emulator.waitNSlots 1
-        callEndpoint @"buy" h4 nftEx2'
+        callEndpoint @"update" h3 (nftEx2', 11_000_000)
         void $ Emulator.waitNSlots 1
     

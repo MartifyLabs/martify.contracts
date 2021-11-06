@@ -45,10 +45,10 @@ PlutusTx.makeIsDataIndexed ''NFTSale [('NFTSale, 0)]
 PlutusTx.makeLift ''NFTSale
 
 
-data SaleAction = Buy | Close
+data SaleAction = Buy | Update | Close
     deriving Show
 
-PlutusTx.makeIsDataIndexed ''SaleAction [('Buy, 0), ('Close, 1)]
+PlutusTx.makeIsDataIndexed ''SaleAction [('Buy, 0), ('Update, 1), ('Close, 2)]
 PlutusTx.makeLift ''SaleAction
 
 
@@ -73,4 +73,10 @@ data StartParams = StartParams
     } deriving (Pr.Eq, Pr.Ord, Show, Generic, ToJSON, FromJSON, ToSchema)
 
 
-type SaleSchema = Endpoint "close" BuyParams .\/ Endpoint "buy" BuyParams .\/ Endpoint "start" StartParams
+type SaleSchema = Endpoint "close" BuyParams 
+                  .\/
+                  Endpoint "buy" BuyParams
+                  .\/
+                  Endpoint "update" (BuyParams, Integer)
+                  .\/
+                  Endpoint "start" StartParams

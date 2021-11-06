@@ -22,7 +22,7 @@ import           Codec.Serialise          ( serialise )
 import           Cardano.Api.Shelley      (PlutusScript (..), PlutusScriptV1)
 import qualified PlutusTx
 import PlutusTx.Prelude as Plutus
-    ( Bool(..), Eq((==)), (.), (&&), traceIfFalse, Integer, Maybe, (>=), fromInteger, (*), (%) )
+    ( Bool(..), Eq((==)), (.), (&&), traceIfFalse, Integer, Maybe(..), (>=), fromInteger, (*), (%) )
 import Ledger
     ( TokenName,
       PubKeyHash(..),
@@ -36,7 +36,12 @@ import Ledger
       Validator,
       TxOut,
       txInfoSignatories,
-      unValidatorScript, valuePaidTo )
+      unValidatorScript, 
+      valuePaidTo,
+      findDatum,
+      txInfoOutputs,
+      txOutValue,
+      getContinuingOutputs)
 import qualified Ledger.Typed.Scripts      as Scripts
 import qualified Plutus.V1.Ledger.Scripts as Plutus
 import           Ledger.Value              as Value ( valueOf )
@@ -56,11 +61,14 @@ nftDatum o f = do
 mkBuyValidator :: PubKeyHash -> NFTSale -> SaleAction -> ScriptContext -> Bool
 mkBuyValidator pkh nfts r ctx =
     case r of
-        Buy   -> traceIfFalse "NFT not sent to buyer" checkNFTOut &&
-                 traceIfFalse "Seller not paid" checkSellerOut &&
-                 traceIfFalse "Fee not paid" checkFee
-        Close -> traceIfFalse "No rights to perform this action" checkCloser &&
-                 traceIfFalse "Close output invalid" checkCloseOut
+        Buy    -> traceIfFalse "NFT not sent to buyer" checkNFTOut &&
+                  traceIfFalse "Seller not paid" checkSellerOut &&
+                  traceIfFalse "Fee not paid" checkFee
+        Update -> traceIfFalse "No rights to perform this action" checkUser &&
+                  traceIfFalse "Modified datum other than price" checkDatum &&
+                  traceIfFalse "NFT left the script" checkContinuingNFT
+        Close  -> traceIfFalse "No rights to perform this action" checkUser &&
+                  traceIfFalse "Close output invalid" checkCloseOut
   where
     info :: TxInfo
     info = scriptContextTxInfo ctx
@@ -81,6 +89,12 @@ mkBuyValidator pkh nfts r ctx =
     price :: Integer
     price = nPrice nfts
 
+    getSaleDatum :: Maybe NFTSale
+    getSaleDatum = let os = [ o | o <- txInfoOutputs info, valueOf (txOutValue o) cs tn == 1 ] in
+                  case os of
+                    [o] -> nftDatum o (`findDatum` info)
+                    _   -> Nothing
+
     checkNFTOut :: Bool
     checkNFTOut = valueOf (valuePaidTo info sig) cs tn == 1
     
@@ -90,8 +104,21 @@ mkBuyValidator pkh nfts r ctx =
     checkFee :: Bool
     checkFee = fromInteger (Ada.getLovelace (Ada.fromValue (valuePaidTo info pkh))) >= 2 % 100 * fromInteger price
 
-    checkCloser :: Bool
-    checkCloser = txSignedBy info seller
+    checkUser :: Bool
+    checkUser = txSignedBy info seller
+
+    checkDatum :: Bool
+    checkDatum = case getSaleDatum of
+      Nothing -> False
+      Just ns -> nSeller   ns == nSeller   nfts &&
+                 nCurrency ns == nCurrency nfts &&
+                 nToken    ns == nToken    nfts 
+
+    checkContinuingNFT :: Bool
+    checkContinuingNFT = let cos = [ co | co <- getContinuingOutputs ctx, valueOf (txOutValue co) cs tn == 1 ] in
+        case cos of
+            [_] -> True
+            _   -> False
 
     checkCloseOut :: Bool
     checkCloseOut = valueOf (valuePaidTo info seller) cs tn == 1
