@@ -1,4 +1,4 @@
-# Vendere
+# Martify
 NFT Marketplace on the Cardano Blockchain. Powered by Plutus Smart Contracts
 A simple contract that allows sales of NFTs. The seller (owner of an NFT) constructs the contract with parameters unique to the sale and locks the NFT there.
 A buyer can then unlock the NFT by submitting a transaction verifying the several requirements defined in the validator.
