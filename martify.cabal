@@ -69,7 +69,7 @@ executable market-plutus
   ghc-options:          -threaded -rtsopts "-with-rtsopts=-T"
 
   build-depends:        cardano-api
-                      , vendere
+                      , martify
                       , plutus-ledger-api
                       , bytestring
                       , cardano-ledger-alonzo
@@ -81,7 +81,7 @@ executable datum-json
   main-is:              datum-json.hs
   ghc-options:          -threaded -rtsopts "-with-rtsopts=-T"
 
-  build-depends:        vendere
+  build-depends:        martify
                       , bytestring
                       , cardano-api
                       , plutus-tx
