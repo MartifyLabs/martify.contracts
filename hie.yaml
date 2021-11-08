@@ -2,7 +2,7 @@ cradle:
   cabal:
 
     - path: "./src"
-      component: "lib:vendere"
+      component: "lib:martify"
     
     - path: "./app/market-plutus.hs"
       component: "exe:market-plutus"
