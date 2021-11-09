@@ -16,23 +16,12 @@ import qualified PlutusTx
 
 import Market.Types (NFTSale(..))
 
--- This module is here to convert Haskell Data Types to JSON files, particularly used for Redeemer and Datum
--- To use this enter `cabal run datum-json <price> <seller> <tn> <cs>`
+-- This module is here to convert Haskell Data Types to JSON files, particularly used for NFTSale custom Datum Type.
+-- To use this enter `cabal run datum-json <price> <seller> <tn> <cs>`.
+-- The <seller> needs to be in different format than the one usually used.
+-- When the marketplace is released, we will update this section with instructions on how to convert to the required format.
 
-
--- Constructs the JSON file for the Buy Redeemer constructor, used as input to --tx-in-redeemer-file
-{-
-testR :: IO ()
-testR = do
-  writeData "redeemer.json" Close
-  putStrLn "Done" -}
-
- -- This is an example to fill with real data
-      -- The `nSeller` needs to be in Base16 format, not Bech32 (addr1...).
-      -- To easily get the Base16 version, go to Cardanoscan.io, search the address in format addr1...
-       -- The address is written in two formats, the first being Bech32 aka addr1... and the other (in light gray) being in Base16
-
--- Constructs the JSON file for the nftEx datum, used as input to --tx-in-datum-file
+-- Constructs the JSON file for the datum, used as input to --tx-in-datum-file in cardano-cli
 main :: IO ()
 main = do
   [price', seller', tn' ,cs'] <- getArgs
