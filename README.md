@@ -17,3 +17,8 @@ A buyer can then unlock the NFT by submitting a transaction verifying the severa
 We would really appreciate financial support to our project, it helps us spend more time and effort on it.
 
 ADA Address : addr1vycmju7zumcgq5wsdmdwkxafhhuu3xeed60auwngww2fkjcr38qjm
+
+## Open source usage
+Martify is an open source smart-contract for NFT Marketplaces.
+The list of marketplaces using our contracts is :
+* https://jpg.store
