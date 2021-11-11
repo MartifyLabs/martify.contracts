@@ -22,7 +22,7 @@ import           Codec.Serialise          ( serialise )
 import           Cardano.Api.Shelley      (PlutusScript (..), PlutusScriptV1)
 import qualified PlutusTx
 import PlutusTx.Prelude as Plutus
-    ( Bool(..), Eq((==)), (.), (&&), traceIfFalse, Integer, Maybe(..), (>=), fromInteger, (*), (%) )
+    ( Bool(..), Eq((==)), (.), (&&), traceIfFalse, Integer, Maybe(..), (>=), fromInteger, (*), (%), (-) )
 import Ledger
     ( TokenName,
       PubKeyHash(..),
@@ -36,7 +36,7 @@ import Ledger
       Validator,
       TxOut,
       txInfoSignatories,
-      unValidatorScript, 
+      unValidatorScript,
       valuePaidTo,
       findDatum,
       txInfoOutputs,
@@ -61,9 +61,12 @@ nftDatum o f = do
 mkBuyValidator :: PubKeyHash -> NFTSale -> SaleAction -> ScriptContext -> Bool
 mkBuyValidator pkh nfts r ctx =
     case r of
-        Buy    -> traceIfFalse "NFT not sent to buyer" checkNFTOut &&
-                  traceIfFalse "Seller not paid" checkSellerOut &&
-                  traceIfFalse "Fee not paid" checkFee
+        Buy    -> traceIfFalse "Fee not paid" checkFee &&
+                  traceIfFalse "NFT not sent to buyer" checkNFTOut &&
+                  if nRoyPrct nfts == 0
+                    then traceIfFalse "Seller not paid" checkSellerOut
+                    else traceIfFalse "Seller' not paid" checkSellerOut' &&
+                         traceIfFalse "Royalty not paid" checkRoyalty
         Update -> traceIfFalse "No rights to perform this action" checkUser &&
                   traceIfFalse "Modified datum other than price" checkDatum &&
                   traceIfFalse "NFT left the script" checkContinuingNFT
@@ -97,12 +100,18 @@ mkBuyValidator pkh nfts r ctx =
 
     checkNFTOut :: Bool
     checkNFTOut = valueOf (valuePaidTo info sig) cs tn == 1
-    
+
     checkSellerOut :: Bool
-    checkSellerOut = fromInteger (Ada.getLovelace (Ada.fromValue (valuePaidTo info seller))) >= 98 % 100 * fromInteger price
+    checkSellerOut = fromInteger (Ada.getLovelace (Ada.fromValue (valuePaidTo info seller))) >= (100 - 2) % 100 * fromInteger price
+
+    checkSellerOut' :: Bool
+    checkSellerOut' = fromInteger (Ada.getLovelace (Ada.fromValue (valuePaidTo info seller))) >= (100 - 2 - nRoyPrct nfts) % 100 * fromInteger price
 
     checkFee :: Bool
     checkFee = fromInteger (Ada.getLovelace (Ada.fromValue (valuePaidTo info pkh))) >= 2 % 100 * fromInteger price
+
+    checkRoyalty :: Bool
+    checkRoyalty = fromInteger (Ada.getLovelace (Ada.fromValue (valuePaidTo info (nRoyAddr nfts)))) >= nRoyPrct nfts % 100 * fromInteger price
 
     checkUser :: Bool
     checkUser = txSignedBy info seller
@@ -112,7 +121,9 @@ mkBuyValidator pkh nfts r ctx =
       Nothing -> False
       Just ns -> nSeller   ns == nSeller   nfts &&
                  nCurrency ns == nCurrency nfts &&
-                 nToken    ns == nToken    nfts 
+                 nToken    ns == nToken    nfts &&
+                 nRoyAddr  ns == nRoyAddr  nfts &&
+                 nRoyPrct  ns == nRoyPrct  nfts
 
     checkContinuingNFT :: Bool
     checkContinuingNFT = let cos = [ co | co <- getContinuingOutputs ctx, valueOf (txOutValue co) cs tn == 1 ] in

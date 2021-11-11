@@ -29,9 +29,11 @@ import           Plutus.Contract           ( Endpoint, type (.\/) )
 -- This is the datum type, carrying the previous validator params
 data NFTSale = NFTSale
     { nSeller    :: !PubKeyHash
-    , nPrice     :: !Integer
+    , nPrice     :: !Plutus.Integer
     , nCurrency  :: !CurrencySymbol
     , nToken     :: !TokenName
+    , nRoyAddr   :: !PubKeyHash
+    , nRoyPrct   :: !Plutus.Integer
     } deriving (Pr.Eq, Pr.Ord, Show, Generic, ToJSON, FromJSON, ToSchema)
 
 instance Eq NFTSale where
@@ -39,7 +41,9 @@ instance Eq NFTSale where
     a == b = (nSeller    a == nSeller    b) &&
              (nPrice     a == nPrice     b) &&
              (nCurrency  a == nCurrency  b) &&
-             (nToken     a == nToken     b)
+             (nToken     a == nToken     b) &&
+             (nRoyAddr   a == nRoyAddr   b) &&
+             (nRoyPrct   a == nRoyPrct   b)
 
 PlutusTx.makeIsDataIndexed ''NFTSale [('NFTSale, 0)]
 PlutusTx.makeLift ''NFTSale

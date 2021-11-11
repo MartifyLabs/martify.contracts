@@ -24,12 +24,14 @@ import Market.Types (NFTSale(..))
 -- Constructs the JSON file for the datum, used as input to --tx-in-datum-file in cardano-cli
 main :: IO ()
 main = do
-  [price', seller', tn' ,cs'] <- getArgs
+  [price', seller', tn' ,cs', raddr', rprct'] <- getArgs
   let price  = read price'
       seller = fromString seller'
       tn     = fromString tn'
       cs     = fromString cs'
-      nftEx  = NFTSale seller price cs tn
+      raddr  = fromString raddr'
+      rprct  = read rprct'
+      nftEx  = NFTSale seller price cs tn raddr rprct
   writeData ("datum-" ++ show cs ++ "-" ++ tn' ++ ".json") nftEx
   putStrLn "Done"
 -- Datum also needs to be passed when sending the token to the script (aka putting for sale)

@@ -13,7 +13,7 @@ import           Data.Monoid               as Mnd ( (<>) )
 import           Control.Monad             ( void, forever )
 import           Data.Aeson                (ToJSON)
 import           Data.Text                 (Text)
-import           Prelude                   (String, fromIntegral, ceiling, Float, (*))
+import           Prelude                   (String, fromIntegral, ceiling, Float, (*), (-), (/))
 
 
 import Plutus.Contract as Contract
@@ -59,7 +59,7 @@ import Plutus.ChainIndex.Tx ( ChainIndexTx(_citxData) )
 
 import           Market.Types               (NFTSale(..), SaleAction(..), SaleSchema, StartParams(..), BuyParams(..))
 import           Market.Onchain             ( Sale, typedBuyValidator, buyValidator, nftDatum )
-import           Utility                    (companyPkh)
+import           Utility                    (companyPkh, wallet, walletPubKeyHash)
 
 
 startSale :: StartParams -> Contract w SaleSchema Text ()
@@ -67,8 +67,8 @@ startSale sp = do
     pkh <- pubKeyHash <$> Contract.ownPubKey
     utxos <- utxosAt (pubKeyHashAddress pkh)
     let val     = Value.singleton (sCs sp) (sTn sp) 1
-        dat     = NFTSale { nSeller = pkh, nToken = sTn sp, nCurrency = sCs sp, nPrice = sPrice sp }
-        lookups = Constraints.unspentOutputs utxos                         <>
+        dat     = NFTSale { nSeller = pkh, nToken = sTn sp, nCurrency = sCs sp, nPrice = sPrice sp, nRoyAddr = walletPubKeyHash $ wallet 6, nRoyPrct = 3 }
+        lookups = Constraints.unspentOutputs utxos <>
                   Constraints.typedValidatorLookups (typedBuyValidator companyPkh)
         tx      = Constraints.mustPayToTheScript dat val
     ledgerTx <- submitTxConstraintsWith @Sale lookups tx
@@ -85,18 +85,27 @@ buy bp = do
         Just (oref, o, nfts) -> do
             let r       = Redeemer $ PlutusTx.toBuiltinData Buy
                 val     = Value.singleton (nCurrency nfts) (nToken nfts) 1 <> Ada.lovelaceValueOf 1724100
-                valAdaS = Ada.lovelaceValueOf (ceiling (0.98 Prelude.* fromIntegral (nPrice nfts) :: Float))
+                valAdaS = Ada.lovelaceValueOf (ceiling ((1 - 0.02 - (fromIntegral (nRoyPrct nfts) / 100)) Prelude.* fromIntegral (nPrice nfts) :: Float))
                 valAdaF = Ada.lovelaceValueOf (ceiling (0.2 Prelude.* fromIntegral (nPrice nfts) :: Float))
                 lookups = Constraints.typedValidatorLookups (typedBuyValidator companyPkh) <>
                           Constraints.unspentOutputs (Map.singleton oref o)   <>
                           Constraints.otherScript (buyValidator companyPkh)
-                tx      = Constraints.mustSpendScriptOutput oref r          <>
-                          Constraints.mustPayToPubKey pkh val               <>
+                tx      = Constraints.mustSpendScriptOutput oref r           <>
+                          Constraints.mustPayToPubKey pkh val                <>
                           Constraints.mustPayToPubKey (nSeller nfts) valAdaS <>
                           Constraints.mustPayToPubKey companyPkh valAdaF
-            ledgerTx <- submitTxConstraintsWith lookups tx
-            void $ awaitTxConfirmed $ txId ledgerTx
-            Contract.logInfo @String "buy transaction confirmed"
+            if nRoyPrct nfts == 0 then do
+                Contract.logInfo @String "buy transaction confirmed"
+                ledgerTx <- submitTxConstraintsWith lookups tx
+                void $ awaitTxConfirmed $ txId ledgerTx
+                Contract.logInfo @String "buy transaction confirmed"
+            else do
+               let valRoy  = Ada.lovelaceValueOf (ceiling (fromIntegral (nRoyPrct nfts) Prelude.* fromIntegral (nPrice nfts) :: Float))
+                   txFinal = Constraints.mustPayToPubKey (nRoyAddr nfts) valRoy <> tx
+               Contract.logInfo @String "buy transaction confirmed"
+               ledgerTx <- submitTxConstraintsWith lookups txFinal
+               void $ awaitTxConfirmed $ txId ledgerTx
+               Contract.logInfo @String "buy transaction confirmed"
 
 
 update :: (BuyParams, Integer) -> Contract w SaleSchema Text ()
