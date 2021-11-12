@@ -86,7 +86,7 @@ buy bp = do
             let r       = Redeemer $ PlutusTx.toBuiltinData Buy
                 val     = Value.singleton (nCurrency nfts) (nToken nfts) 1 <> Ada.lovelaceValueOf 1724100
                 valAdaS = Ada.lovelaceValueOf (ceiling (0.98 Prelude.* fromIntegral (nPrice nfts) :: Float))
-                valAdaF = Ada.lovelaceValueOf (ceiling (0.2 Prelude.* fromIntegral (nPrice nfts) :: Float))
+                valAdaF = Ada.lovelaceValueOf (ceiling (0.02 Prelude.* fromIntegral (nPrice nfts) :: Float))
                 lookups = Constraints.typedValidatorLookups (typedBuyValidator companyPkh) <>
                           Constraints.unspentOutputs (Map.singleton oref o)   <>
                           Constraints.otherScript (buyValidator companyPkh)
