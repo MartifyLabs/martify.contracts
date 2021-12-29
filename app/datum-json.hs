@@ -31,8 +31,8 @@ main = do
       cs     = fromString cs'
       raddr  = fromString raddr'
       rprct  = read rprct'
-      nftEx  = NFTSale seller price cs tn raddr rprct
-  writeData ("datum-" ++ show cs ++ "-" ++ tn' ++ ".json") nftEx
+      nfts   = NFTSale seller price cs tn raddr rprct
+  writeData ("datum-" ++ show cs ++ "-" ++ tn' ++ ".json") nfts
   putStrLn "Done"
 -- Datum also needs to be passed when sending the token to the script (aka putting for sale)
 -- When doing this, the datum needs to be hashed, see Alonzo-purple exercise-solutions on how to hash a datum

@@ -7,11 +7,12 @@
 {-# LANGUAGE TypeOperators         #-}
 
 module Market.Types
-    ( NFTSale (..)
-    , SaleAction (..)
+    ( SaleAction (..)
     , SaleSchema
     , StartParams (..)
     , BuyParams (..)
+    , NFTSale (..)
+    , MarketParams (..)
     )
     where
 
@@ -23,10 +24,19 @@ import qualified Prelude                   as Pr
 import           Schema                    (ToSchema)
 import qualified PlutusTx
 import           PlutusTx.Prelude          as Plutus ( Eq(..), (&&), Integer )
-import           Ledger                    ( TokenName, CurrencySymbol, PubKeyHash )
+import           Ledger                    ( TokenName, CurrencySymbol, PubKeyHash, ValidatorHash )
 import           Plutus.Contract           ( Endpoint, type (.\/) )
 
--- This is the datum type, carrying the previous validator params
+data MarketParams = MarketParams
+    { feeAddr  :: !PubKeyHash
+    , updateTn :: !TokenName
+    , updateCs :: !CurrencySymbol
+    } deriving (Generic, ToJSON, FromJSON)
+
+PlutusTx.makeIsDataIndexed ''MarketParams [('MarketParams, 0)]
+PlutusTx.makeLift ''MarketParams
+
+
 data NFTSale = NFTSale
     { nSeller    :: !PubKeyHash
     , nPrice     :: !Plutus.Integer
@@ -34,7 +44,7 @@ data NFTSale = NFTSale
     , nToken     :: !TokenName
     , nRoyAddr   :: !PubKeyHash
     , nRoyPrct   :: !Plutus.Integer
-    } deriving (Pr.Eq, Pr.Ord, Show, Generic, ToJSON, FromJSON, ToSchema)
+    } deriving (Generic, ToJSON, FromJSON)
 
 instance Eq NFTSale where
     {-# INLINABLE (==) #-}
@@ -49,10 +59,10 @@ PlutusTx.makeIsDataIndexed ''NFTSale [('NFTSale, 0)]
 PlutusTx.makeLift ''NFTSale
 
 
-data SaleAction = Buy | Update | Close
+data SaleAction = Buy | Update | Close | UpdateC
     deriving Show
 
-PlutusTx.makeIsDataIndexed ''SaleAction [('Buy, 0), ('Update, 1), ('Close, 2)]
+PlutusTx.makeIsDataIndexed ''SaleAction [('Buy, 0), ('Update, 1), ('Close, 2), ('UpdateC, 3)]
 PlutusTx.makeLift ''SaleAction
 
 
@@ -77,10 +87,16 @@ data StartParams = StartParams
     } deriving (Pr.Eq, Pr.Ord, Show, Generic, ToJSON, FromJSON, ToSchema)
 
 
-type SaleSchema = Endpoint "close" BuyParams 
+type SaleSchema = Endpoint "close" BuyParams
                   .\/
                   Endpoint "buy" BuyParams
+                  .\/
+                  Endpoint "buy'" (BuyParams, BuyParams)
                   .\/
                   Endpoint "update" (BuyParams, Integer)
                   .\/
                   Endpoint "start" StartParams
+                  .\/
+                  Endpoint "updateContract" ValidatorHash
+                  .\/
+                  Endpoint "sendToken" Integer
