@@ -23,7 +23,7 @@ import Market.Types (SaleAction(..), NFTSale(..))
 -- Constructs the JSON file for the Buy Redeemer constructor, used as input to --tx-in-redeemer-file
 testR :: IO ()
 testR = do 
-  writeData "update.json" Update
+  writeData "update.json" Close
   putStrLn "Done"
 
 
@@ -33,6 +33,8 @@ nftEx = NFTSale
     , nSeller   = "4b4355acf5e549d4cd26408723d1c8d87a98db7598e40bb1cd3b343e"
     , nToken    = "Vendere"
     , nCurrency = "8b050684e8d7e1abb2b79227f44c4c767025decb140e64efc783d046"
+    , nRoyAddr  = nSeller nftEx
+    , nRoyPrct  = 0
     } -- This is an example to fill with real data
       -- The `nSeller` needs to be in Base16 format, not Bech32 (addr1...).
       -- To easily get the Base16 version, go to Cardanoscan.io, search the address in format addr1...

@@ -4,23 +4,43 @@ module Utility
     ( walletPubKeyHash
     , wallet
     , companyPkh
-    , companyPkhReal ) where
+    , companyPkhReal
+    , mp
+    , mpReal
+    , mpMainnet ) where
 
 import           Plutus.V1.Ledger.Crypto (PubKeyHash)
-import           Ledger (pubKeyHash)
-import           Wallet.Emulator.Wallet (Wallet, walletPubKey, fromWalletNumber, WalletNumber(..))
-import           PlutusTx.Prelude ((.))
+import           Wallet.Emulator.Wallet (Wallet, knownWallet, walletPubKeyHash)
 
 import           Prelude hiding ((.))
 
-wallet :: Integer -> Wallet
-wallet = fromWalletNumber . WalletNumber
+import Market.Types  (MarketParams(..))
 
-walletPubKeyHash :: Wallet -> PubKeyHash
-walletPubKeyHash = pubKeyHash . walletPubKey
+wallet :: Integer -> Wallet
+wallet = knownWallet
 
 companyPkh :: PubKeyHash
 companyPkh = walletPubKeyHash $ wallet 1
 
+
+mp :: MarketParams
+mp = MarketParams companyPkh
+
+
+
 companyPkhReal :: PubKeyHash
-companyPkhReal = "a75c75fa79bc7d53ef715d64745a7a01c2c1f7653b2ae962413ac521"
+companyPkhReal = "09aaedfc2c267948a623a4dddd093327c235c3fa88a47f14d41a7347"
+
+
+mpReal :: MarketParams
+mpReal = MarketParams companyPkhReal
+
+
+
+
+companyPkhMainnet :: PubKeyHash
+companyPkhMainnet = "09aaedfc2c267948a623a4dddd093327c235c3fa88a47f14d41a7347"
+
+
+mpMainnet :: MarketParams
+mpMainnet = MarketParams companyPkhMainnet

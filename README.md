@@ -23,7 +23,7 @@ A buyer can then unlock the NFT by submitting a transaction verifying the severa
 * Go into the Martify repo after you built it using `cabal build`
 * run `cabal run market-plutus`
 * copy the resulting `market.plutus` file in the folder where you minted the NFT
-* run `cabal run datum-json price sellerAddr tokenName policyId` where sellerAddr is the output you copied previously
+* run `cabal run datum-json sellerAddr price tokenName policyId royaltyAddr royaltyPercent` where sellerAddr is the output you copied previously, royaltyAddr should also be hash address (if you don't know, just put the same as sellerAddr and 0 for royaltyPercent)
 * copy the resulting file in the folder where you minted the NFT
 * go back to the folder where you minted the NFT
 * run `cardano-cli address build --payment-script-file market.plutus --$testnet >> script.addr`

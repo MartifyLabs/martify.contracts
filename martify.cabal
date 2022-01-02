@@ -3,9 +3,9 @@ Name:               martify
 Version:            0.1.0.0
 Build-Type:         Simple
 
-Author:              Alain Magazin, Abdelkrim Did
+Author:              Alain Magazin, Abdelkrim Dib
 Maintainer:          alain.magazin@outlook.com, <abdelkrim mail>
-Copyright:           © 2021 Alain Magazin, Abdelkrim Did.
+Copyright:           © 2021 Alain Magazin, Abdelkrim Dib.
 License:             Apache-2.0
 License-files:       LICENSE
 
@@ -86,4 +86,3 @@ executable datum-json
                       , cardano-api
                       , plutus-tx
                       , aeson
-
