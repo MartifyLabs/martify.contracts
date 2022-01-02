@@ -9,3 +9,6 @@ cradle:
 
     - path: "./app/datum-json.hs"
       component: "exe:datum-json"
+
+    - path: "./app/update-datum-json.hs"
+      component: "exe:update-datum-json"

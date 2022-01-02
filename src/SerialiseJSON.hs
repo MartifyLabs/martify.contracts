@@ -23,7 +23,7 @@ import Market.Types (SaleAction(..), NFTSale(..))
 -- Constructs the JSON file for the Buy Redeemer constructor, used as input to --tx-in-redeemer-file
 testR :: IO ()
 testR = do 
-  writeData "update.json" Update
+  writeData "update.json" Close
   putStrLn "Done"
 
 

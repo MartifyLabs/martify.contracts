@@ -3,9 +3,9 @@ Name:               martify
 Version:            0.1.0.0
 Build-Type:         Simple
 
-Author:              Alain Magazin for Martify Labs
-Maintainer:          contact@martify.io
-Copyright:           © 2021 Martify Labs
+Author:              Alain Magazin, Abdelkrim Dib
+Maintainer:          alain.magazin@outlook.com, <abdelkrim mail>
+Copyright:           © 2021 Alain Magazin, Abdelkrim Dib.
 License:             Apache-2.0
 License-files:       LICENSE
 
@@ -31,8 +31,6 @@ library
                      , Market.Onchain
                      , Market.Offchain
                      , Market.Trace
-                     , Updator.Onchain
-                     , Updator.Types
                      , Utility
                      , SerialiseJSON
   build-depends:       aeson
@@ -88,4 +86,3 @@ executable datum-json
                       , cardano-api
                       , plutus-tx
                       , aeson
-

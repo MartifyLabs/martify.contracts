@@ -21,8 +21,7 @@ import           Data.Default (def)
 
 import Utility         (wallet, mp)
 import Market.Offchain (endpoints)
-import Market.Onchain  (buyValidatorHash)
-import Market.Types    (StartParams(..), BuyParams(..), MarketParams(updateCs, updateTn))
+import Market.Types    (StartParams(..), BuyParams(..))
 
 nftEx1 :: StartParams
 nftEx1 = StartParams
@@ -54,8 +53,7 @@ nftEx2' = BuyParams
 
 test :: IO ()
 test = do
-    let dist = Map.fromList [ (wallet 1, Ada.lovelaceValueOf 10_000_000
-                                      <> Value.singleton (updateCs mp) (updateTn mp) 1)
+    let dist = Map.fromList [ (wallet 1, Ada.lovelaceValueOf 10_000_000)
                             , (wallet 2, Ada.lovelaceValueOf 10_000_000)
                             , (wallet 3, Ada.lovelaceValueOf 10_000_000
                                       <> Value.singleton (sCs nftEx2) (sTn nftEx2) 1

@@ -27,10 +27,8 @@ import           PlutusTx.Prelude          as Plutus ( Eq(..), (&&), Integer )
 import           Ledger                    ( TokenName, CurrencySymbol, PubKeyHash, ValidatorHash )
 import           Plutus.Contract           ( Endpoint, type (.\/) )
 
-data MarketParams = MarketParams
-    { feeAddr  :: !PubKeyHash
-    , updateTn :: !TokenName
-    , updateCs :: !CurrencySymbol
+newtype MarketParams = MarketParams
+    { feeAddr  :: PubKeyHash
     } deriving (Generic, ToJSON, FromJSON)
 
 PlutusTx.makeIsDataIndexed ''MarketParams [('MarketParams, 0)]
@@ -59,10 +57,10 @@ PlutusTx.makeIsDataIndexed ''NFTSale [('NFTSale, 0)]
 PlutusTx.makeLift ''NFTSale
 
 
-data SaleAction = Buy | Update | Close | UpdateC
+data SaleAction = Buy | Close
     deriving Show
 
-PlutusTx.makeIsDataIndexed ''SaleAction [('Buy, 0), ('Update, 1), ('Close, 2), ('UpdateC, 3)]
+PlutusTx.makeIsDataIndexed ''SaleAction [('Buy, 0), ('Close, 1)]
 PlutusTx.makeLift ''SaleAction
 
 
@@ -92,8 +90,6 @@ type SaleSchema = Endpoint "close" BuyParams
                   Endpoint "buy" BuyParams
                   .\/
                   Endpoint "buy'" (BuyParams, BuyParams)
-                  .\/
-                  Endpoint "update" (BuyParams, Integer)
                   .\/
                   Endpoint "start" StartParams
                   .\/

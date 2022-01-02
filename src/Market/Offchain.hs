@@ -61,19 +61,8 @@ import Plutus.ChainIndex.Tx ( ChainIndexTx(_citxData) )
 
 import           Market.Types               (MarketParams(..), NFTSale(..), SaleAction(..), SaleSchema, StartParams(..), BuyParams(..))
 import           Market.Onchain             as O2 ( Sale, typedBuyValidator, buyValidator, buyValidatorHash, nftDatum )
-import           Updator.Onchain            as O1 ( Updator, typedUpdateValidator, updateValidator )
-import           Updator.Types              (UpdateVHash(..))
-import           Utility                    (wallet, walletPubKeyHash, mp, mp')
+import           Utility                    (wallet, walletPubKeyHash, mp)
 
-sendToken :: Contract w SaleSchema Text ()
-sendToken = do
-    let val     = Value.singleton (updateCs mp) (updateTn mp) 1
-        uvh     = UpdateVHash (O2.buyValidatorHash mp)
-        lookups = Constraints.typedValidatorLookups (O1.typedUpdateValidator mp')
-        tx      = Constraints.mustPayToTheScript uvh val
-    ledgerTx <- submitTxConstraintsWith @O1.Updator lookups tx
-    void $ awaitTxConfirmed $ getCardanoTxId ledgerTx
-    Contract.logInfo @String "sent update token"
 
 startSale :: StartParams -> Contract w SaleSchema Text ()
 startSale sp = do
@@ -163,7 +152,7 @@ update (bp, newprice) = do
     case sale of
         Nothing -> Contract.logError @String "No sale found"
         Just (oref, o, nfts) -> do
-            let r       = Redeemer $ PlutusTx.toBuiltinData Update
+            let r       = Redeemer $ PlutusTx.toBuiltinData Close
                 val     = Value.singleton (nCurrency nfts) (nToken nfts) 1
                 nfts'   = nfts { nPrice = newprice }
                 lookups = Constraints.typedValidatorLookups (O2.typedBuyValidator mp) <>
@@ -208,58 +197,6 @@ findSale (cs, tn) = do
     f (o, _) = valueOf (txOutValue $ toTxOut o) cs tn == 1
 
 
-updateContract :: ValidatorHash -> Contract w SaleSchema Text ()
-updateContract vh = do
-    datums <- findSales
-    if and (map isJust datums) then do
-        token <- findToken (updateCs mp, updateTn mp)
-        case token of
-            Nothing -> Contract.logError @String "update token not found"
-            Just (oref, o) -> do
-                let valToken = Value.singleton (updateCs mp) (updateTn mp) 1
-                    uvh      = UpdateVHash vh
-                    r        = Redeemer $ PlutusTx.toBuiltinData UpdateC
-                    lookups  = Constraints.typedValidatorLookups (O1.typedUpdateValidator mp') <>
-                               Constraints.otherScript (O1.updateValidator mp') <>
-                               Constraints.otherScript (O2.buyValidator mp) <>
-                               mconcat [ Constraints.unspentOutputs (Map.singleton oref' o') | Just (oref', o', _) <- datums ] <>
-                               Constraints.unspentOutputs (Map.singleton oref o)
-                    tx       = Constraints.mustSpendScriptOutput oref r <>
-                               Constraints.mustPayToTheScript uvh valToken <>
-                               mconcat [ Constraints.mustSpendScriptOutput oref' r | Just (oref', _, _) <- datums ] <>
-                               mconcat [ Constraints.mustPayToOtherScript vh (Datum $ PlutusTx.toBuiltinData nfts) (Value.singleton (nCurrency nfts) (nToken nfts) 1) | Just (_, _, nfts) <- datums ]
-                Contract.logInfo @String (show vh)
-                ledgerTx <- submitTxConstraintsWith lookups tx
-                void $ awaitTxConfirmed $ getCardanoTxId ledgerTx
-                Contract.logInfo @String "Marketplace updated !"
-    else Contract.logError @String "One of the sales has corrupted datum"
-
-
-findToken :: (AsContractError e, ToJSON e) => (CurrencySymbol, TokenName) -> Contract w SaleSchema e (Maybe (TxOutRef, ChainIndexTxOut))
-findToken (cs, tn) = do
-    utxos <- Map.filter f <$> utxosTxOutTxAt (scriptAddress $ O1.updateValidator mp')
-    return $ case Map.toList utxos of
-        [(oref, (o, _))] -> Just (oref, o)
-        _           -> Nothing
-  where
-    f :: (ChainIndexTxOut, Plutus.ChainIndex.Tx.ChainIndexTx) -> Bool
-    f (o, _) = valueOf (txOutValue $ toTxOut o) cs tn == 1
-
-findSales :: (AsContractError e, ToJSON e) => Contract w SaleSchema e [Maybe (TxOutRef, ChainIndexTxOut, NFTSale)]
-findSales = do
-    utxos <- utxosTxOutTxAt (scriptAddress $ O2.buyValidator mp)
-    let mds = getDatums $ Map.toList utxos
-    return mds
-
-getDatums :: [(TxOutRef, (ChainIndexTxOut, ChainIndexTx))] -> [Maybe (TxOutRef, ChainIndexTxOut, NFTSale)]
-getDatums [] = []
-getDatums [(oref, (o, citx))] = do
-    let dat = nftDatum (toTxOut o) $ \dh -> Map.lookup dh $ _citxData citx
-    case dat of
-        Just nfts -> [Just (oref, o, nfts)]
-        _         -> [Nothing]
-getDatums (x:xs) = getDatums [x] ++ getDatums xs
-
 endpoints :: Contract () SaleSchema Text ()
 endpoints = forever
           $ handleError logError
@@ -267,14 +204,8 @@ endpoints = forever
           $ start' `select` buy1
                    `select` buy2
                    `select` close'
-                   `select` update'
-                   `select` updateContract'
-                   `select` sendToken'
   where
     start'          = endpoint @"start"          $ \nfts       -> startSale nfts
     buy1            = endpoint @"buy"            $ \bp         -> buy bp
     buy2            = endpoint @"buy'"           $ \(bp1, bp2) -> buy' (bp1, bp2)
     close'          = endpoint @"close"          $ \nfts       -> close nfts
-    update'         = endpoint @"update"         $ \(nfts, x)  -> update (nfts, x)
-    updateContract' = endpoint @"updateContract" $ \vh         -> updateContract vh
-    sendToken'      = endpoint @"sendToken"      $ const         sendToken
