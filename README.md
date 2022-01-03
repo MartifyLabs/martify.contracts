@@ -93,3 +93,4 @@ ADA Address : addr1vycmju7zumcgq5wsdmdwkxafhhuu3xeed60auwngww2fkjcr38qjm
 Martify is an open source smart-contract for NFT Marketplaces.
 The list of marketplaces based on our contracts is :
 * https://jpg.store
+* https://martify.io
