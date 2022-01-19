@@ -23,7 +23,7 @@ import           Codec.Serialise       ( serialise )
 import           Cardano.Api.Shelley (PlutusScript (..), PlutusScriptV1)
 import qualified PlutusTx
 import PlutusTx.Prelude as Plutus
-    ( Bool(..), Eq((==)), (.), (||), length, (&&), Integer, Maybe(..), (>=), fromInteger, (*), ($), (%), (-), map )
+    ( Bool(..), Eq((==)), (.), traceIfFalse, filter, (||), length, (&&), Integer, Maybe(..), (>=), fromInteger, (*), (%), (-), map )
 import Ledger
     ( PubKeyHash(..),
       ValidatorHash,
@@ -34,7 +34,6 @@ import Ledger
       txOutDatum,
       txSignedBy,
       ScriptContext(scriptContextTxInfo),
-      ownHash,
       TxInfo,
       Validator,
       TxOut,
@@ -79,9 +78,14 @@ mkBuyValidator mp nfts r ctx = case r of
     sig = case txInfoSignatories info of
             [pubKeyHash] -> pubKeyHash
 
+    checkIfInputIsScript :: TxOut -> Bool
+    checkIfInputIsScript i = case txOutAddress i of
+        Address (ScriptCredential _) Nothing -> True
+        _                                    -> False
+
     checkSingleBuy :: Bool
-    checkSingleBuy = let is = [ i | i <- map txInInfoResolved (txInfoInputs info), txOutAddress i == Address (ScriptCredential $ ownHash ctx) Nothing ] in
-        length is == 1
+    checkSingleBuy = let is = [ i | i <- map txInInfoResolved (txInfoInputs info)] in
+        length (filter checkIfInputIsScript is) == 1
 
     checkFee :: Integer -> Bool
     checkFee price = fromInteger (Ada.getLovelace (Ada.fromValue (valuePaidTo info (feeAddr mp)))) >= 1 % 100 * fromInteger price
