@@ -19,7 +19,7 @@ ADA Address : addr1vycmju7zumcgq5wsdmdwkxafhhuu3xeed60auwngww2fkjcr38qjm
 
 ## Contract usage
 The Martify contract for marketplaces is being used by several marketplaces currently live on Cardano.
-The list of marketplaces based on our contracts is :
+The list of marketplaces based on our contracts is:
 * https://jpg.store
 * https://martify.io
 * https://filthyrichhorses.com/marketplace

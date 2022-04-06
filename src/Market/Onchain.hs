@@ -23,7 +23,7 @@ import           Codec.Serialise       ( serialise )
 import           Cardano.Api.Shelley (PlutusScript (..), PlutusScriptV1)
 import qualified PlutusTx
 import PlutusTx.Prelude as Plutus
-    ( Bool(..), Eq((==)), (.), (||), length, (&&), Integer, Maybe(..), (>=), fromInteger, (*), ($), (%), (-), map )
+    ( Bool(..), Eq((==)), (.), (||), length, filter, (&&), Integer, Maybe(..), (>=), fromInteger, (*), ($), (%), (-), map )
 import Ledger
     ( PubKeyHash(..),
       ValidatorHash,
@@ -79,9 +79,14 @@ mkBuyValidator mp nfts r ctx = case r of
     sig = case txInfoSignatories info of
             [pubKeyHash] -> pubKeyHash
 
+    checkIfInputIsScript :: TxOut -> Bool
+    checkIfInputIsScript i = case txOutAddress i of
+        Address (ScriptCredential _) Nothing -> True
+        _                                    -> False
+
     checkSingleBuy :: Bool
-    checkSingleBuy = let is = [ i | i <- map txInInfoResolved (txInfoInputs info), txOutAddress i == Address (ScriptCredential $ ownHash ctx) Nothing ] in
-        length is == 1
+    checkSingleBuy = let is = [ i | i <- map txInInfoResolved (txInfoInputs info)] in
+        length (filter checkIfInputIsScript is) == 1
 
     checkFee :: Integer -> Bool
     checkFee price = fromInteger (Ada.getLovelace (Ada.fromValue (valuePaidTo info (feeAddr mp)))) >= 2 % 100 * fromInteger price
@@ -91,7 +96,6 @@ mkBuyValidator mp nfts r ctx = case r of
 
     checkRoyalty :: PubKeyHash -> Integer -> Integer -> Bool
     checkRoyalty royAddr royPrct price = (royPrct == 0) || (fromInteger (Ada.getLovelace (Ada.fromValue (valuePaidTo info royAddr))) >= royPrct % 1000 * fromInteger price)
-
 
 
 data Sale
