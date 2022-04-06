@@ -4,10 +4,9 @@ module Utility
     ( walletPubKeyHash
     , wallet
     , companyPkh
-    , companyPkhReal
+    , companyPkhGhostsMainnet
     , mp
-    , mpReal
-    , mpMainnet ) where
+    , ghostMp ) where
 
 import           Plutus.V1.Ledger.Crypto (PubKeyHash)
 import           Wallet.Emulator.Wallet (Wallet, knownWallet, walletPubKeyHash)
@@ -28,19 +27,11 @@ mp = MarketParams companyPkh
 
 
 
-companyPkhReal :: PubKeyHash
-companyPkhReal = "09aaedfc2c267948a623a4dddd093327c235c3fa88a47f14d41a7347"
+-- Ghostchain params
+
+companyPkhGhostsMainnet :: PubKeyHash
+companyPkhGhostsMainnet = "ffdb13373ff4a2ca98657a357176967b4533799f74607b9bf31ed194"
 
 
-mpReal :: MarketParams
-mpReal = MarketParams companyPkhReal
-
-
-
-
-companyPkhMainnet :: PubKeyHash
-companyPkhMainnet = "09aaedfc2c267948a623a4dddd093327c235c3fa88a47f14d41a7347"
-
-
-mpMainnet :: MarketParams
-mpMainnet = MarketParams companyPkhMainnet
+ghostMp :: MarketParams
+ghostMp = MarketParams companyPkhGhostsMainnet

@@ -15,7 +15,7 @@ import System.Environment ( getArgs )
 import qualified Data.ByteString.Short as SBS
 
 import Market.Onchain  as O2 (apiBuyScript, buyScriptAsShortBs)
-import Utility         (mpReal, mpMainnet)
+import Utility         (ghostMp)
 
 
 main :: IO ()
@@ -25,7 +25,7 @@ main = do
     let scriptnum = if nargs > 0 then read (head args) else 42
     let scriptname = if nargs > 1 then args!!1 else  "market_mainnet_final.plutus"
     putStrLn $ "Writing output to: " ++ scriptname
-    writePlutusScript scriptnum scriptname (O2.apiBuyScript mpMainnet) (O2.buyScriptAsShortBs mpMainnet)
+    writePlutusScript scriptnum scriptname (O2.apiBuyScript ghostMp) (O2.buyScriptAsShortBs ghostMp)
 
 
 writePlutusScript :: Integer -> FilePath -> PlutusScript PlutusScriptV1 -> SBS.ShortByteString -> IO ()

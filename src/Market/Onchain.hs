@@ -84,10 +84,10 @@ mkBuyValidator mp nfts r ctx = case r of
         length is == 1
 
     checkFee :: Integer -> Bool
-    checkFee price = fromInteger (Ada.getLovelace (Ada.fromValue (valuePaidTo info (feeAddr mp)))) >= 1 % 100 * fromInteger price
+    checkFee price = fromInteger (Ada.getLovelace (Ada.fromValue (valuePaidTo info (feeAddr mp)))) >= 2 % 100 * fromInteger price
 
     checkSellerOut :: PubKeyHash -> Integer -> Integer -> Bool
-    checkSellerOut seller royPrct price = fromInteger (Ada.getLovelace (Ada.fromValue (valuePaidTo info seller))) >= (1000 - 10 - royPrct) % 1000 * fromInteger price
+    checkSellerOut seller royPrct price = fromInteger (Ada.getLovelace (Ada.fromValue (valuePaidTo info seller))) >= (1000 - 20 - royPrct) % 1000 * fromInteger price
 
     checkRoyalty :: PubKeyHash -> Integer -> Integer -> Bool
     checkRoyalty royAddr royPrct price = (royPrct == 0) || (fromInteger (Ada.getLovelace (Ada.fromValue (valuePaidTo info royAddr))) >= royPrct % 1000 * fromInteger price)
